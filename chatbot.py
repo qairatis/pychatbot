@@ -5,41 +5,50 @@ user_template = "USER : {0}"
 import random
 import re
 
-name = "Greg"
-weather = "cloudy"
-
 # Define a dictionary containing a list of responses for each message
-responses = dict(question=["I don't know :(", 'you tell me!'], statement=['tell me more!',
-                                                                          'why do you think that?',
-                                                                          'how long have you felt this way?',
-                                                                          'I find that extremely interesting',
-                                                                          'can you back that up?',
-                                                                          'oh wow!',
-                                                                          ':)'])
+responses = {'default': 'default message',
+ 'goodbye': 'goodbye for now',
+ 'greet': 'Hello you! :)',
+ 'thankyou': 'you are very welcome'}
 
 rules = {'I want (.*)': ['What would it mean if you got {0}',
-  'Why do you want {0}',
-  "What's stopping you from getting {0}"],
+                         'Why do you want {0}',
+                         "What's stopping you from getting {0}"],
  'do you remember (.*)': ['Did you think I would forget {0}',
-  "Why haven't you been able to forget {0}",
-  'What about {0}',
-  'Yes .. and?'],
- 'do you think (.*)': ['if {0}? Absolutely.', 'No chance'],
+                          "Why haven't you been able to forget {0}",
+                          'What about {0}',
+                          'Yes .. and?'],
+ 'do you think (.*)': ['if {0}? Absolutely.',
+                       'No chance'],
  'if (.*)': ["Do you really think it's likely that {0}",
-  'Do you wish that {0}',
-  'What do you think about {0}',
-  'Really--if {0}']}
+             'Do you wish that {0}',
+             'What do you think about {0}',
+             'Really--if {0}']
+}
 
-# Define respond()
+patterns = {'goodbye': re.compile(r'bye|farewell', re.UNICODE),
+ 'greet': re.compile(r'hello|hi|hey', re.UNICODE),
+ 'thankyou': re.compile(r'thank|thx', re.UNICODE)}
+
+# Define a function to find the intent of a message
+def match_intent(message):
+    matched_intent = None
+    for intent, pattern in patterns.items():
+        # Check if the pattern occurs in the message
+        if pattern.search(message):
+            matched_intent = intent
+    return matched_intent
+
+
+# Define a respond function
 def respond(message):
-    # Call match_rule
-    response, phrase = match_rule(rules, message)
-    if '{0}' in response:
-        # Replace the pronouns in the phrase
-        phrase = replace_pronouns(phrase)
-        # Include the phrase in the response
-        response = response.format(phrase)
-    return response
+    # Call the match_intent function
+    intent = match_intent(message)
+    # Fall back to the default response
+    key = "default"
+    if intent in responses:
+        key = intent
+    return responses[key]
 
 
 # Define a function that sends a message to the bot: send_message
@@ -55,7 +64,6 @@ def send_message(message):
 # Define match_rule()
 def match_rule(rules, message):
     response, phrase = "default", None
-
     # Iterate over the rules dictionary
     for pattern, responses in rules.items():
         # Create a match object
@@ -71,7 +79,6 @@ def match_rule(rules, message):
 
 # Define replace_pronouns()
 def replace_pronouns(message):
-
     message = message.lower()
     if 'me' in message:
         # Replace 'me' with 'you'
@@ -88,8 +95,8 @@ def replace_pronouns(message):
 
     return message
 
-# Send the messages
-send_message("do you remember your last birthday")
-send_message("do you think humans should be worried about AI")
-send_message("I want a robot friend")
-send_message("what if you could be anything you wanted")
+
+# Send messages
+send_message("hello!")
+send_message("bye byeee")
+send_message("thanks very much!")
