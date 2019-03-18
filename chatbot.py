@@ -1,9 +1,17 @@
-bot_template = "BOT : {0}"
-user_template = "USER : {0}"
-
 # Import the random module
 import random
 import re
+import spacy
+
+# Import necessary modules
+from rasa_nlu.training_data.loading import load_data
+from rasa_nlu.config import RasaNLUModelConfig
+from rasa_nlu.model import Trainer
+
+nlp = spacy.load('en_core_web_md')
+
+bot_template = "BOT : {0}"
+user_template = "USER : {0}"
 
 # Define a dictionary containing a list of responses for each message
 responses = {'default': 'default message',
@@ -30,6 +38,7 @@ patterns = {'goodbye': re.compile(r'bye|farewell', re.UNICODE),
  'greet': re.compile(r'hello|hi|hey', re.UNICODE),
  'thankyou': re.compile(r'thank|thx', re.UNICODE)}
 
+
 # Define a function to find the intent of a message
 def match_intent(message):
     matched_intent = None
@@ -54,6 +63,7 @@ def find_name(message):
             # Return the name if the keywords are present
             name = ' '.join(name_words)
     return name
+
 
 # Define respond()
 def respond(message):
@@ -106,7 +116,6 @@ def replace_pronouns(message):
     if 'you' in message:
         # Replace 'you' with 'me'
         return re.sub('you', 'me', message)
-
     return message
 
 
@@ -114,3 +123,77 @@ def replace_pronouns(message):
 send_message("my name is David Copperfield")
 send_message("call me Ishmael")
 send_message("People call me Cassandra")
+
+# Define included entities
+include_entities = ['DATE', 'ORG', 'PERSON']
+colors = ['black', 'red', 'blue']
+items = ['shoes', 'handback', 'jacket', 'jeans']
+
+
+# Define extract_entities()
+def extract_entities(message):
+    # Create a dict to hold the entities
+    ents = dict.fromkeys(include_entities)
+    # Create a spacy document
+    doc = nlp(message)
+    for ent in doc.ents:
+        if ent.label_ in include_entities:
+            # Save interesting entities
+            ents[ent.label_] = ent.text
+    return ents
+
+
+def entity_type(word):
+    _type = None
+    if word.text in colors:
+        _type = "color"
+    elif word.text in items:
+        _type = "item"
+    return _type
+
+
+# Iterate over parents in parse tree until an item entity is found
+def find_parent_item(word):
+    # Iterate over the word's ancestors
+    for parent in word.ancestors:
+        # Check for an "item" entity
+        if entity_type(parent) == "item":
+            return parent.text
+    return None
+
+
+# For all color entities, find their parent item
+def assign_colors(doc):
+    # Iterate over the document
+    for word in doc:
+        # Check for "color" entities
+        if entity_type(word) == "color":
+            # Find the parent
+            item = find_parent_item(word)
+            print("item: {0} has color : {1}".format(item, word))
+
+
+# Create the document
+doc = nlp("let's see that jacket in red and some blue jeans")
+
+# Assign the colors
+assign_colors(doc)
+
+print(extract_entities('friends called Mary who have worked at Google since 2010'))
+print(extract_entities('people who graduated from MIT in 1999'))
+
+# Create args dictionary
+args = {"pipeline": "spacy_sklearn"}
+
+# Create a configuration and trainer
+config = RasaNLUModelConfig(args)
+trainer = Trainer(config)
+
+# Load the training data
+training_data = load_data("./training_data.json")
+
+# Create an interpreter by training the model
+interpreter = trainer.train(training_data)
+
+# Try it out
+print(interpreter.parse("I'm looking for a Mexican restaurant in the North of town"))
