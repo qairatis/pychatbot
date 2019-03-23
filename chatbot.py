@@ -8,7 +8,7 @@ from rasa_nlu.training_data.loading import load_data
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.model import Trainer
 
-nlp = spacy.load('en_core_web_md')
+nlp = spacy.load('en')
 
 bot_template = "BOT : {0}"
 user_template = "USER : {0}"
